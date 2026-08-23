@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔥 WebToApp Forge — sajt → APK</title>
+<style>
+  :root{
+    --bg:#0b0e14; --card:#141a26; --card2:#1b2432; --line:#2a3648;
+    --txt:#e8eef7; --dim:#8b98ab; --acc:#ff7a1a; --acc2:#ffb14d;
+    --ok:#2fbf71; --err:#ff5470;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%, #2a1a1033, transparent),
+               radial-gradient(900px 500px at -10% 110%, #1a2a4033, transparent), var(--bg);
+    display:flex; justify-content:center; padding:28px 14px 60px;
+  }
+  .wrap{width:100%; max-width:640px}
+  h1{font-size:30px; margin:6px 0 2px; letter-spacing:.5px}
+  h1 .fire{filter:drop-shadow(0 0 14px #ff7a1a88)}
+  .sub{color:var(--dim); margin:0 0 22px}
+  .card{
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid var(--line); border-radius:16px; padding:20px 20px 22px;
+    box-shadow:0 14px 40px #0008, inset 0 1px 0 #ffffff10;
+  }
+  label{display:block; font-size:13px; color:var(--dim); margin:14px 0 6px; text-transform:uppercase; letter-spacing:.08em}
+  input[type=text],input[type=url]{
+    width:100%; padding:12px 14px; border-radius:10px; font-size:15px;
+    background:#0d1119; border:1px solid var(--line); color:var(--txt); outline:none;
+    transition:border .15s, box-shadow .15s;
+  }
+  input:focus{border-color:var(--acc); box-shadow:0 0 0 3px #ff7a1a22}
+  .row{display:flex; gap:12px}
+  .row>div{flex:1}
+  .iconbox{
+    display:flex; align-items:center; gap:12px; padding:10px 12px;
+    background:#0d1119; border:1px dashed var(--line); border-radius:10px; cursor:pointer;
+  }
+  .iconbox:hover{border-color:var(--acc)}
+  .iconbox img{width:44px; height:44px; border-radius:10px}
+  .iconbox small{color:var(--dim)}
+  button.forge{
+    margin-top:20px; width:100%; padding:15px; font-size:18px; font-weight:700;
+    letter-spacing:.12em; color:#1a0e00; border:none; border-radius:12px; cursor:pointer;
+    background:linear-gradient(90deg,var(--acc),var(--acc2));
+    box-shadow:0 8px 24px #ff7a1a55, inset 0 1px 0 #ffffff66;
+    transition:transform .08s, filter .15s;
+  }
+  button.forge:hover{filter:brightness(1.07)}
+  button.forge:active{transform:scale(.985)}
+  button.forge:disabled{filter:grayscale(.8); cursor:wait; opacity:.6}
+  .term{
+    margin-top:18px; background:#07090d; border:1px solid var(--line); border-radius:12px;
+    padding:14px; font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#9fe8a9; height:230px; overflow-y:auto; white-space:pre-wrap; word-break:break-all;
+  }
+  .term:empty::after{content:"⏳ Ovde će ići log kovanja…"; color:#3d4a5c}
+  .badge{display:inline-block; padding:3px 10px; border-radius:99px; font-size:12px; font-weight:600}
+  .b-run{background:#ff7a1a22; color:var(--acc2)}
+  .b-ok{background:#2fbf7122; color:var(--ok)}
+  .b-err{background:#ff547022; color:var(--err)}
+  .done{
+    margin-top:18px; display:none; text-align:center; padding:18px;
+    border:1px solid #2fbf7155; background:#2fbf7114; border-radius:12px;
+  }
+  .done a{
+    display:inline-block; margin-top:8px; padding:13px 26px; border-radius:10px;
+    background:var(--ok); color:#06230f; font-weight:800; text-decoration:none; font-size:16px;
+  }
+  .note{margin-top:16px; font-size:12.5px; color:var(--dim); line-height:1.6}
+  .note code{color:var(--acc2)}
+  #sdkStatus{font-size:12px; color:var(--dim); margin-bottom:8px}
+  @media(max-width:520px){.row{flex-direction:column; gap:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="fire">🔥</span> WebToApp <span style="color:var(--acc)">Forge</span></h1>
+  <p class="sub">Ukucaj adresu sajta → dobiješ pravi, potpisan <b>.apk</b> fajl spreman za Android.</p>
+  <div id="sdkStatus">⏳ Proveravam SDK…</div>
+
+  <div class="card">
+    <label>Adresa sajta (URL)</label>
+    <input type="url" id="url" placeholder="https://moj-sajt.com" autocomplete="off">
+
+    <label>Ime aplikacije</label>
+    <input type="text" id="name" placeholder="Moja Aplikacija" maxlength="40" autocomplete="off">
+
+    <div class="row">
+      <div>
+        <label>Package (opciono)</label>
+        <input type="text" id="pkg" placeholder="com.mojafirma.app" autocomplete="off">
+      </div>
+      <div style="max-width:130px">
+        <label>Verzija</label>
+        <input type="text" id="ver" value="1.0" autocomplete="off">
+      </div>
+    </div>
+
+    <label>Ikonica (opciono — PNG)</label>
+    <div class="iconbox" id="iconbox">
+      <img id="iconPreview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' rx='10' fill='%232a3648'/%3E%3Ctext x='22' y='29' font-size='20' text-anchor='middle' fill='%238b98ab'%3E🖼%3C/text%3E%3C/svg%3E" alt="">
+      <div><b id="iconLabel">Izaberi sliku…</b><br><small>Ako preskočiš, koristi se Forge ikonica.</small></div>
+      <input type="file" id="iconFile" accept="image/png,image/jpeg" hidden>
+    </div>
+
+    <button class="forge" id="btn" onclick="startForge()">⚒️&nbsp; FORGE APK</button>
+
+    <div style="margin-top:16px"><span id="badge" class="badge" style="display:none"></span></div>
+    <div class="term" id="log"></div>
+
+    <div class="done" id="done">
+      <div>✅ <b>APK je iskovan!</b> <span id="dlInfo"></span></div>
+      <a id="dl" href="#">⬇️ PREUZMI APK</a>
+    </div>
+
+    <p class="note">
+      📱 <b>Instalacija:</b> prebaci APK na telefon, otvori ga i dozvoli „instalaciju iz nepoznatih izvora".
+      APK je potpisan Forge ključem (self-signed) — radi svuda, ali za <b>Google Play</b> upload
+      ćeš želeti sopstveni keystore. Aplikacija je WebView omotač: otvara tvoj sajt na ceo ekran,
+      bez trake pregledača, sa back dugmetom i progress bar-om.
+    </p>
+  </div>
+</div>
+
+<script>
+let iconB64 = null, poll = null, shown = 0;
+
+fetch('/api/health').then(r=>r.json()).then(j=>{
+  document.getElementById('sdkStatus').innerHTML = j.sdk
+    ? '✅ Android SDK spreman — forge radi.' : '⚠️ SDK nije pronađen — javi administratoru.';
+}).catch(()=>{});
+
+const box = document.getElementById('iconbox');
+box.onclick = () => document.getElementById('iconFile').click();
+document.getElementById('iconFile').onchange = e => {
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    document.getElementById('iconPreview').src = r.result;
+    document.getElementById('iconLabel').textContent = f.name;
+    iconB64 = r.result.split(',')[1];
+  };
+  r.readAsDataURL(f);
+};
+
+// automatski package iz imena (samo ako korisnik nije ništa kucao)
+document.getElementById('name').addEventListener('input', e=>{
+  const pkg = document.getElementById('pkg');
+  if (pkg.dataset.touched) return;
+  const slug = e.target.value.toLowerCase()
+    .replace(/š/g,'s').replace(/đ/g,'dj').replace(/[čć]/g,'c').replace(/ž/g,'z')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,'').slice(0,20) || 'app';
+  pkg.value = 'com.webtoapp.' + slug;
+});
+document.getElementById('pkg').addEventListener('input', e=>{ e.target.dataset.touched = 1; });
+
+function logLine(t){
+  const el = document.getElementById('log');
+  el.textContent += t + "\n";
+  el.scrollTop = el.scrollHeight;
+}
+function setBadge(cls, txt){
+  const b = document.getElementById('badge');
+  b.style.display = 'inline-block'; b.className = 'badge ' + cls; b.textContent = txt;
+}
+
+async function startForge(){
+  const url = document.getElementById('url').value.trim();
+  if(!url){ alert('Ukucaj adresu sajta!'); return; }
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  document.getElementById('done').style.display = 'none';
+  document.getElementById('log').textContent = '';
+  setBadge('b-run','⚒️ Kovam…');
+  shown = 0;
+
+  const body = {
+    url, app_name: document.getElementById('name').value.trim(),
+    package: document.getElementById('pkg').value.trim(),
+    version_name: document.getElementById('ver').value.trim() || '1.0',
+    icon_b64: iconB64
+  };
+  let job;
+  try{
+    const r = await fetch('/api/forge', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const j = await r.json();
+    if(j.error){ setBadge('b-err','❌ '+j.error); btn.disabled=false; return; }
+    job = j.job;
+  }catch(e){ setBadge('b-err','❌ mrežna greška'); btn.disabled=false; return; }
+
+  poll = setInterval(async ()=>{
+    try{
+      const r = await fetch('/api/status?job='+job);
+      const j = await r.json();
+      for(; shown < j.log.length; shown++) logLine(j.log[shown]);
+      if(j.state === 'done'){
+        clearInterval(poll); btn.disabled = false;
+        setBadge('b-ok','✅ Gotovo');
+        document.getElementById('dlInfo').textContent = `${j.apk_name} · ${j.size_mb} MB`;
+        const dl = document.getElementById('dl');
+        dl.href = j.apk; dl.setAttribute('download', j.apk_name);
+        document.getElementById('done').style.display = 'block';
+      } else if(j.state === 'error'){
+        clearInterval(poll); btn.disabled = false;
+        setBadge('b-err','❌ ' + (j.error || 'greška'));
+      }
+    }catch(e){}
+  }, 700);
+}
+</script>
+</body>
+</html>
