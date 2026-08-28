@@ -155,15 +155,28 @@ public class MainActivity extends Activity {
         s.setDatabaseEnabled(true);
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
-        s.setSupportZoom(true);
-        s.setBuiltInZoomControls(true);
-        s.setDisplayZoomControls(false);
+        // Zakljucaj prikaz na 100% — sprecava "zumiran" prikaz na telefonima
+        // gde je u podesavanjima uvecan sistemski font/display size.
+        s.setTextZoom(100);
+%ZOOM%
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         s.setAllowFileAccess(true);
         s.setJavaScriptCanOpenWindowsAutomatically(true);
 
-        web.setWebViewClient(new WebViewClient());
+        web.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                // Ako stranica nema viewport meta tag, ubaci ga — bez njega se
+                // sajt na nekim telefonima prikazuje uvecan/odsecen.
+                view.evaluateJavascript(
+                    "(function(){var m=document.querySelector('meta[name=viewport]');"
+                    + "if(!m){m=document.createElement('meta');m.name='viewport';"
+                    + "m.content='width=device-width, initial-scale=1.0';"
+                    + "document.head.appendChild(m);}})();", null);
+            }
+        });
         web.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView v, int p) {
@@ -249,7 +262,8 @@ def make_icon(png_bytes, dest):
 
 # ---------------------------------------------------------------- glavna funkcija
 
-def forge(url, app_name, package="", version_name="1.0", icon_bytes=None, log=print):
+def forge(url, app_name, package="", version_name="1.0", icon_bytes=None,
+          allow_zoom=False, log=print):
     """Kompletan build. Vraća putanju do potpisanog APK-a."""
     url = normalize_url(url)
     app_name = (app_name or "").strip() or "Web Aplikacija"
@@ -262,7 +276,9 @@ def forge(url, app_name, package="", version_name="1.0", icon_bytes=None, log=pr
     jar, tools = sdk_tools()
 
     log(f"🔥 FORGE start: «{app_name}» → {url}")
-    log(f"   paket={package}  verzija={version_name} ({version_code})")
+    log(f"   paket={package}  verzija={version_name} ({version_code})  "
+        f"zumiranje={'UKLJUČENO' if allow_zoom else 'isključeno'}")
+    log("📌 Prikaz fiksiran na 100% (textZoom) + auto viewport meta tag.")
 
     work = tempfile.mkdtemp(prefix="forge_")
     try:
@@ -272,6 +288,14 @@ def forge(url, app_name, package="", version_name="1.0", icon_bytes=None, log=pr
         os.makedirs(os.path.join(res, "drawable"))
         srcdir = os.path.join(work, "src", *package.split("."))
         os.makedirs(srcdir)
+
+        if allow_zoom:
+            zoom_settings = ("        s.setSupportZoom(true);\n"
+                             "        s.setBuiltInZoomControls(true);\n"
+                             "        s.setDisplayZoomControls(false);")
+        else:
+            zoom_settings = ("        s.setSupportZoom(false);\n"
+                             "        s.setBuiltInZoomControls(false);")
 
         def W(path, text):
             with open(os.path.join(work, path), "w", encoding="utf-8") as f:
@@ -285,7 +309,8 @@ def forge(url, app_name, package="", version_name="1.0", icon_bytes=None, log=pr
           STRINGS.replace("%APPNAME%", escape(app_name))
                  .replace("%URL%", escape(url)))
         W(os.path.join("src", *package.split("."), "MainActivity.java"),
-          ACTIVITY.replace("%PKG%", package))
+          ACTIVITY.replace("%PKG%", package)
+                  .replace("%ZOOM%", zoom_settings))
 
         if icon_bytes is None and os.path.exists(DEFAULT_ICON):
             with open(DEFAULT_ICON, "rb") as f:
@@ -343,9 +368,9 @@ def forge(url, app_name, package="", version_name="1.0", icon_bytes=None, log=pr
             if line.startswith(("package:", "application-label:", "launchable-activity:")):
                 log("  ✓ " + line)
 
+        import uuid
         dest_dir = os.environ.get("FORGE_OUT_DIR", os.path.join(BASE, "out"))
         os.makedirs(dest_dir, exist_ok=True)
-        import uuid
         final = os.path.join(dest_dir,
                              f"{slugify(app_name)}-{version_name}-{uuid.uuid4().hex[:6]}.apk")
         shutil.copy(out_apk, final)
@@ -364,10 +389,13 @@ if __name__ == "__main__":
     ap.add_argument("--package", default="")
     ap.add_argument("--version", default="1.0")
     ap.add_argument("--icon", default=None, help="Putanja do PNG ikonice")
+    ap.add_argument("--zoom", action="store_true",
+                    help="Dozvoli pinch-to-zoom (po defaultu isključeno, prikaz fiksan na 100%%)")
     args = ap.parse_args()
     icon = open(args.icon, "rb").read() if args.icon else None
     try:
-        apk = forge(args.url, args.name, args.package, args.version, icon)
+        apk = forge(args.url, args.name, args.package, args.version, icon,
+                    allow_zoom=args.zoom)
         print("\nAPK:", apk)
     except ForgeError as e:
         print("\n❌ " + str(e))

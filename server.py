@@ -51,6 +51,7 @@ def run_job(job_id, payload):
             package=payload.get("package", ""),
             version_name=payload.get("version_name", "1.0"),
             icon_bytes=icon,
+            allow_zoom=bool(payload.get("allow_zoom")),
             log=log)
         name = os.path.basename(apk)
         job.update(state="done", apk=f"/api/download?job={job_id}",

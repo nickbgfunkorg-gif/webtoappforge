@@ -81,5 +81,8 @@ APK završi u `out/`.
 
 - **Instalacija na telefon:** otvori APK i dozvoli „Install unknown apps".
 - **Google Play:** APK je tehnički validan; za prodavnicu ga prepotpiši sopstvenim keystore-om.
+- **Zumiranje:** prikaz je po defaultu zaključan na 100% (`textZoom=100` + auto viewport tag)
+  — nema „uvećanog" prikaza ni na telefonima sa uvećanim sistemskim fontom. Pinch-zoom se
+  opciono uključuje checkbox-om u UI ili `--zoom` u CLI.
 - Aplikacija je WebView omotač: sajt preko celog ekrana, back dugme, progress bar,
   JavaScript + localStorage uključeni.
